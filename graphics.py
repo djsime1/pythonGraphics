@@ -227,11 +227,14 @@ class GraphWin(tk.Canvas):
         self.mouseY = None
         self.mouseXright = None  # SN: Added 04.05.20.22.17
         self.mouseYright = None  # SN: Added 04.05.20.22.17
+        self.mouseXmiddle = None  # DS: Added 04.05.20.13.37
+        self.mouseYmiddle = None  # DS: Added 04.05.20.13.37
         self.keys = set()  # DJC: Added 03.05.18.11.33
         self.currentMouseX = 0  # DJC: Added 04.04.18.12.03
         self.currentMouseY = 0  # DJC: Added 04.04.18.12.03
         self.bind("<Button-1>", self._onClick)
         self.bind("<Button-3>", self._onRtClick)  # SN: Added 04.05.20.22.17
+        self.bind("<Button-2>", self._onMbClick)  # DS: Added 04.19.20.13.37
         #        self.bind_all("<Key>", self._onKey)
         self.bind_all('<KeyPress>', self.keyPressHandler)  # DJC: Added 03.05.18.11.33
         self.bind_all('<KeyRelease>', self.keyReleaseHandler)  # DJC: Added 03.05.18.11.33
@@ -336,12 +339,27 @@ class GraphWin(tk.Canvas):
         self.mouseYright = None
         while self.mouseXright == None or self.mouseYright == None:
             self.update()
-            if self.isClosed(): raise GraphicsError("getMouse in closed window")
+            if self.isClosed(): raise GraphicsError("getMouseRight in closed window")
             time.sleep(.1)  # give up thread
         x, y = self.toWorld(self.mouseXright, self.mouseYright)
         self.mouseXright = None
         self.mouseYright = None
         return Point(x, y)
+
+    def getMouseMiddle(self):  # DS: Added 04.05.20.13.37
+            """Wait for a MIDDLE mouse click and return Point object representing
+            the click"""
+            self.update()  # flush any prior clicks
+            self.mouseXmiddle = None
+            self.mouseYmiddle = None
+            while self.mouseXmiddle == None or self.mouseYmiddle == None:
+                self.update()
+                if self.isClosed(): raise GraphicsError("getMouseMiddle in closed window")
+                time.sleep(.1)  # give up thread
+            x, y = self.toWorld(self.mouseXmiddle, self.mouseYmiddle)
+            self.mouseXmiddle = None
+            self.mouseYmiddle = None
+            return Point(x, y)
 
     def checkMouse(self):
         """Return last mouse click or None if mouse has
@@ -358,15 +376,29 @@ class GraphWin(tk.Canvas):
             return None
 
     def checkMouseRight(self):  # SN: Added 04.05.20.22.17
-        """Return last mouse click or None if mouse has
+        """Return last RIGHT mouse click or None if mouse has
         not been clicked since last call"""
         if self.isClosed():
-            raise GraphicsError("checkMouse in closed window")
+            raise GraphicsError("checkMouseRight in closed window")
         self.update()
         if self.mouseXright != None and self.mouseYright != None:
             x, y = self.toWorld(self.mouseXright, self.mouseYright)
             self.mouseXright = None
             self.mouseYright = None
+            return Point(x, y)
+        else:
+            return None
+
+    def checkMouseMiddle(self):  # DS: Added 04.05.20.13.37
+        """Return last MIDDLE mouse click or None if mouse has
+        not been clicked since last call"""
+        if self.isClosed():
+            raise GraphicsError("checkMouseMiddle in closed window")
+        self.update()
+        if self.mouseXmiddle != None and self.mouseYmiddle != None:
+            x, y = self.toWorld(self.mouseXmiddle, self.mouseYmiddle)
+            self.mouseXmiddle = None
+            self.mouseYmiddle = None
             return Point(x, y)
         else:
             return None
@@ -427,6 +459,12 @@ class GraphWin(tk.Canvas):
     def _onRtClick(self, e):  # SN: Added 04.05.20.22.17
         self.mouseXright = e.x
         self.mouseYright = e.y
+        if self._mouseCallback:
+            self._mouseCallback(Point(e.x, e.y))
+
+    def _onMbClick(self, e):  # DS: Added 04.19.20.13.37
+        self.mouseXmiddle = e.x
+        self.mouseYmiddle = e.y
         if self._mouseCallback:
             self._mouseCallback(Point(e.x, e.y))
 
