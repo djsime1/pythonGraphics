@@ -229,12 +229,17 @@ class GraphWin(tk.Canvas):
         self.mouseYright = None  # SN: Added 04.05.20.22.17
         self.mouseXmiddle = None  # DS: Added 04.05.20.13.37
         self.mouseYmiddle = None  # DS: Added 04.05.20.13.37
+        self.scrollDir = 0 # DS: Added 04.05.20.13.37
         self.keys = set()  # DJC: Added 03.05.18.11.33
         self.currentMouseX = 0  # DJC: Added 04.04.18.12.03
         self.currentMouseY = 0  # DJC: Added 04.04.18.12.03
         self.bind("<Button-1>", self._onClick)
         self.bind("<Button-3>", self._onRtClick)  # SN: Added 04.05.20.22.17
         self.bind("<Button-2>", self._onMbClick)  # DS: Added 04.19.20.13.37
+        # Button 4/5 are for X11 systems, MouseWheel is for Windows and Mac.
+        self.bind("<Button-4>", self._onSwUp)  # DS: Added 04.19.20.13.37
+        self.bind("<Button-5>", self._onSwDown)  # DS: Added 04.19.20.13.37
+        self.bind("<MouseWheel>", self._onSwEvent)  # DS: Added 04.19.20.13.37
         #        self.bind_all("<Key>", self._onKey)
         self.bind_all('<KeyPress>', self.keyPressHandler)  # DJC: Added 03.05.18.11.33
         self.bind_all('<KeyRelease>', self.keyReleaseHandler)  # DJC: Added 03.05.18.11.33
@@ -403,6 +408,17 @@ class GraphWin(tk.Canvas):
         else:
             return None
 
+    def checkScroll(self): # DS: Added 04.05.20.13.37
+        """Return last scroll direction (1 up, -1 down) or 0 if scroll
+        wheel has not been moved since last call"""
+        if self.isClosed():
+            raise GraphicsError("checkScroll in closed window")
+        self.update()
+        sd = int(self.scrollDir)
+        self.scrollDir = 0
+        return sd
+
+
     def getKey(self):
         """Wait for user to press a key and return it as a string."""
         self.lastKey = ""
@@ -467,6 +483,18 @@ class GraphWin(tk.Canvas):
         self.mouseYmiddle = e.y
         if self._mouseCallback:
             self._mouseCallback(Point(e.x, e.y))
+
+    def _onSwUp(self,e):  # DS: Added 04.19.20.13.37
+        self.scrollDir = 1
+
+    def _onSwDown(self,e):  # DS: Added 04.19.20.13.37
+        self.scrollDir = -1
+
+    def _onSwEvent(self,e): # DS: Added 04.19.20.13.37
+        if os.name == "nt": # Windows system, divide delta by 120.
+            self.scrollDir = e.delta/120
+        else: # Mac system, delta doesn't need to be modified.
+            self.scrollDir = e.delta
 
     def addItem(self, item):
         self.items.append(item)
